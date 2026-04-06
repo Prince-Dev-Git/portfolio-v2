@@ -49,5 +49,17 @@
         <span title="Google Sheets API" class="text-xl">Sheets CMS</span>
     </div>
 </footer>
+<div id="adminModal" class="hidden fixed inset-0 bg-black z-[300] flex items-center justify-center p-6">
+    <div class="bg-white p-8 rounded-2xl w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-4">Staff Login</h2>
+        <input type="password" id="adminPass" placeholder="Enter Pin" class="w-full p-3 border rounded-xl mb-4 text-center text-2xl tracking-widest">
+        <button onclick="checkAdmin()" class="w-full bg-black text-white py-3 rounded-xl">Login</button>
+    </div>
+</div>
+
+<div id="cartFab" class="hidden fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-2xl z-[100] cursor-pointer" onclick="openCart()">
+    <span id="cartCountFab" class="bg-white text-red-500 text-xs rounded-full px-2 py-1 absolute -top-2 -right-2 font-bold">0</span>
+    🛒
+</div>
 </body>
 </html>

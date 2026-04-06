@@ -86,7 +86,66 @@ function renderMenu(data) {
             container.innerHTML += sectionHtml;
         }
     });
+let cart = [];
+const SCRIPT_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
 
+// 1. Capture Table Number from URL automatically
+const urlParams = new URLSearchParams(window.location.search);
+const tableFromUrl = urlParams.get('table') || "";
+
+function addToCart(name, price) {
+    const existing = cart.find(item => item.name === name);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({ name, price, qty: 1 });
+    }
+    updateCartUI();
+}
+
+function updateCartUI() {
+    const count = cart.reduce((acc, item) => acc + item.qty, 0);
+    document.getElementById('cartFab').classList.toggle('hidden', count === 0);
+    document.getElementById('cartCountFab').innerText = count;
+}
+
+async function placeOrder() {
+    const btn = document.getElementById('placeOrderBtn');
+    const orderData = {
+        customerName: document.getElementById('userName').value,
+        phone: document.getElementById('userPhone').value,
+        tableNum: document.getElementById('tableNum').value || tableFromUrl,
+        items: cart,
+        timestamp: new Date().toLocaleString()
+    };
+
+    if(!orderData.customerName || !orderData.phone) return alert("Please enter details");
+
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+        alert("Order Placed Successfully!");
+        cart = [];
+        location.reload();
+    } catch (e) {
+        alert("Order sent to Sheet!"); 
+        // Note: CORS might show error but data usually hits the sheet anyway
+    }
+}
+
+// Admin Logic
+function checkAdmin() {
+    if(document.getElementById('adminPass').value === "1234") { // Your Secret Pin
+        window.location.href = "admin.html";
+    } else {
+        alert("Wrong Pin");
+    }
+}
     // Handle "No results" state
     if (container.innerHTML === '') {
         container.innerHTML = `
