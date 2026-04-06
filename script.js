@@ -5,8 +5,8 @@ let cart = [];
 const urlParams = new URLSearchParams(window.location.search);
 const tableFromUrl = urlParams.get('table');
 
+// --- 1. MENU LOADING LOGIC ---
 async function fetchMenu() {
-    console.log("Fetching menu data...");
     try {
         const res = await fetch(MENU_CSV);
         const text = await res.text();
@@ -15,9 +15,8 @@ async function fetchMenu() {
             const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             return { name: c[0], cat: c[1], price: c[2], veg: c[3]?.toLowerCase().includes('true'), desc: c[4] };
         });
-        console.log("Menu items loaded:", items.length);
         render(items);
-    } catch (e) { console.error("Critical Load Error:", e); }
+    } catch (e) { console.error("Load Error:", e); }
 }
 
 function render(data) {
@@ -55,6 +54,7 @@ function render(data) {
     });
 }
 
+// --- 2. CART & UI LOGIC ---
 function addToCart(n, p) {
     const itemInCart = cart.find(i => i.name === n);
     if(itemInCart) itemInCart.qty++; else cart.push({name: n, price: p, qty: 1});
@@ -71,6 +71,7 @@ function updateUI() {
     if(document.getElementById('cartCountFab')) document.getElementById('cartCountFab').innerText = count;
 }
 
+// --- 3. MODAL & ORDERING ---
 function openModal() {
     const list = document.getElementById('cartItemsList');
     const totalEl = document.getElementById('cartTotal');
@@ -82,6 +83,7 @@ function openModal() {
     }).join('');
     totalEl.innerText = `₹${total}`;
     document.getElementById('orderModal').classList.remove('hidden');
+    // Pre-fill table number
     if(tableFromUrl) document.getElementById('tableNum').value = tableFromUrl;
 }
 
@@ -100,6 +102,29 @@ async function placeOrder() {
     } catch (e) { alert("Sent to Kitchen!"); location.reload(); }
 }
 
+// --- 4. THE ADMIN TRIGGER (Fixed) ---
+let clicks = 0;
+const logo = document.getElementById('adminTrigger');
+if (logo) {
+    logo.onclick = () => {
+        clicks++;
+        if (clicks === 5) {
+            const p = prompt("Staff Pin:");
+            if (p === "HelloPrince") {
+                window.location.href = "admin.html";
+            } else {
+                alert("Incorrect Pin");
+            }
+            clicks = 0;
+        }
+        setTimeout(() => { clicks = 0; }, 3000); // 3 seconds to get all clicks
+    };
+}
+
+// Event Listeners
 document.getElementById('vegToggle').onchange = fetchMenu;
 document.getElementById('menuSearch').oninput = fetchMenu;
 window.onload = fetchMenu;
+
+// Re-link the modal button since we changed the function name to match your HTML
+function openOrderModal() { openModal(); }
