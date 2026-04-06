@@ -146,6 +146,12 @@ function checkAdmin() {
         alert("Wrong Pin");
     }
 }
+// Update the nav creation part
+const navItem = document.createElement('a');
+navItem.onclick = (e) => {
+    document.querySelectorAll('#categoryNav a').forEach(a => a.classList.remove('active-tab'));
+    navItem.classList.add('active-tab');
+};
     // Handle "No results" state
     if (container.innerHTML === '') {
         container.innerHTML = `
