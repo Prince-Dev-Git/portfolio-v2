@@ -185,3 +185,64 @@ document.getElementById('menuSearch').addEventListener('input', fetchMenu);
 
 // Initial Load
 window.onload = fetchMenu;
+
+function checkAdmin() {
+    const pass = document.getElementById('adminPass').value;
+    // Use a strong password here
+    if(pass === "Hello@world") { 
+        window.location.href = "admin.html";
+    } else {
+        alert("Access Denied: Incorrect Password");
+    }
+}
+
+let logoClicks = 0;
+document.querySelector('h1').addEventListener('click', () => {
+    logoClicks++;
+    if(logoClicks === 5 {
+        document.getElementById('adminModal').classList.remove('hidden');
+        logoClicks = 0; // Reset
+    }
+    setTimeout(() => { logoClicks = 0; }, 2000); // Reset if not 3 clicks in 1 sec
+});
+async function clearOrder(table) {
+    const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+    try {
+        // We now call the 'complete' action instead of 'delete'
+        await fetch(`${SCRIPT_URL}?action=complete&table=${table}`, { mode: 'no-cors' });
+        
+        alert(`Table ${table} marked as Completed!`);
+        fetchOrders(); // Refresh screen
+    } catch (e) {
+        fetchOrders();
+    }
+}
+
+// Inside your renderOrders function, change how you filter rows:
+const rows = data.split('\n').filter(r => r.trim() !== '').slice(1);
+
+const pendingRows = rows.filter(row => {
+    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    return cols[7]?.trim() === "Pending"; // Only show orders that aren't done yet
+});
+
+renderOrders(pendingRows);
+
+let logoClicks = 0;
+const logo = document.querySelector('h1');
+
+logo.style.cursor = 'pointer'; // Make it look clickable for you
+logo.addEventListener('click', () => {
+    logoClicks++;
+    if (logoClicks === 5) {
+        const pass = prompt("Enter Admin Password:");
+        if (pass === "HelloPrince") { // Your Full Password
+            window.location.href = "admin.html";
+        } else {
+        
+            alert("Wrong Password");
+        }
+        logoClicks = 0;
+    }
+    setTimeout(() => { logoClicks = 0; }, 2000);
+});

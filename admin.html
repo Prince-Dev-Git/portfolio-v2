@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Admin | Live Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans p-6">
+    <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+        <h1 class="text-2xl font-bold text-red-500">Kitchen Display System</h1>
+        <div class="text-right">
+            <p id="liveTime" class="text-slate-400 text-sm"></p>
+            <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded">Live Sync On</span>
+        </div>
+    </header>
+
+    <div id="adminOrderGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <p class="text-slate-500 animate-pulse">Waiting for new orders...</p>
+    </div>
+
+    <script>
+        const SHEET_CSV_URL = 'YOUR_ORDERS_SHEET_CSV_URL'; // Use the CSV link of your "Orders" tab
+        
+        async function fetchOrders() {
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const data = await response.text();
+                const rows = data.split('\n').slice(1); 
+                renderOrders(rows);
+            } catch (e) { console.error("Sync Error", e); }
+        }
+
+        function renderOrders(rows) {
+            const grid = document.getElementById('adminOrderGrid');
+            grid.innerHTML = '';
+            
+            // Group rows by Timestamp + Table (to show one "Ticket" per person)
+            const tickets = {};
+            rows.forEach(row => {
+                const cols = row.split(',');
+                const key = cols[0] + cols[3]; // Time + Table
+                if(!tickets[key]) tickets[key] = { name: cols[1], table: cols[3], items: [] };
+                tickets[key].items.push({ name: cols[4], qty: cols[5] });
+            });
+
+            Object.values(tickets).forEach(t => {
+                grid.innerHTML += `
+                    <div class="bg-slate-800 border-l-4 border-red-500 p-5 rounded-xl shadow-xl">
+                        <div class="flex justify-between mb-4">
+                            <span class="font-bold text-xl">Table ${t.table}</span>
+                            <span class="text-slate-400 text-sm">${t.name}</span>
+                        </div>
+                        <ul class="space-y-2 mb-6">
+                            ${t.items.map(i => `<li class="flex justify-between border-b border-slate-700 pb-1">
+                                <span>${i.name}</span>
+                                <span class="font-bold text-red-400">x${i.qty}</span>
+                            </li>`).join('')}
+                        </ul>
+                        <button onclick="clearOrder()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-bold transition-all">
+                            Complete & Delete
+                        </button>
+                    </div>`;
+            });
+        }
+
+        setInterval(fetchOrders, 5000); // Auto-refresh every 5 seconds
+        fetchOrders();
+    </script>
+</body>
+</html>
