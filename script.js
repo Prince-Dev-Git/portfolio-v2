@@ -1,75 +1,84 @@
-const menuData = [
-    // BREAKFAST (10 Items)
-    { id: 1, cat: 'Breakfast', name: 'Classic Avocado Toast', price: 240, veg: true, desc: 'Sourdough, smashed avocado, chili flakes.', img: 'avocado+toast' },
-    { id: 2, cat: 'Breakfast', name: 'Chicken Club Sandwich', price: 320, veg: false, desc: 'Grilled chicken, egg, lettuce, mayo.', img: 'club+sandwich' },
-    { id: 3, cat: 'Breakfast', name: 'Blueberry Pancakes', price: 210, veg: true, desc: 'Fluffy pancakes with maple syrup.', img: 'pancakes' },
-    { id: 4, cat: 'Breakfast', name: 'Masala Omelette', price: 180, veg: false, desc: 'Spiced eggs with onions and cilantro.', img: 'omelette' },
-    { id: 5, cat: 'Breakfast', name: 'Poha Special', price: 120, veg: true, desc: 'Flattened rice with peanuts and lemon.', img: 'poha' },
-    // STARTERS (10 Items)
-    { id: 11, cat: 'Starters', name: 'Paneer Tikka', price: 280, veg: true, desc: 'Grilled cottage cheese with spices.', img: 'paneer+tikka' },
-    { id: 12, cat: 'Starters', name: 'Chicken Wings', price: 350, veg: false, desc: 'Spicy buffalo sauce with ranch.', img: 'chicken+wings' },
-    { id: 13, cat: 'Starters', name: 'Crispy Corn', price: 190, veg: true, desc: 'Fried sweet corn with pepper spice.', img: 'crispy+corn' },
-    // MAIN COURSE (10 Items)
-    { id: 21, cat: 'Main Course', name: 'Butter Chicken', price: 420, veg: false, desc: 'Creamy tomato gravy with tender chicken.', img: 'butter+chicken' },
-    { id: 22, cat: 'Main Course', name: 'Dal Makhani', price: 310, veg: true, desc: 'Slow-cooked black lentils with cream.', img: 'dal' },
-    { id: 23, cat: 'Main Course', name: 'Veg Hakka Noodles', price: 260, veg: true, desc: 'Stir-fried noodles with crisp veggies.', img: 'noodles' },
-    // ... I will populate the remaining 60 in your local file logic below ...
-];
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMMdMzCxRbecA8f_OSKbXEf43jyAbL4yCifIkMZ85WNOTSnFLXJeP4bQo9Hx1Kdd9q85wOCuIo3ZO/pub?gid=0&single=true&output=csv';
 
-// Helper to generate more data to reach 60 quickly for demo
-const categories = ['Breakfast', 'Starters', 'Main Course', 'Salads', 'Desserts', 'Beverages'];
-const fullMenu = [];
-categories.forEach(c => {
-    for(let i=1; i<=10; i++) {
-        fullMenu.push({
-            id: c+i,
-            cat: c,
-            name: `${c} Item ${i}`,
-            price: Math.floor(Math.random() * (450 - 120 + 1) + 120),
-            veg: Math.random() > 0.3, // 70% chance of being veg
-            desc: `Delicious freshly prepared ${c} specialty served hot.`,
-            img: c.toLowerCase()
+async function fetchMenu() {
+    try {
+        const response = await fetch(sheetUrl);
+        const data = await response.text();
+        
+        // Split rows and filter out any empty lines
+        const rows = data.split('\n').filter(row => row.trim() !== '').slice(1); 
+        
+        const menuItems = rows.map(row => {
+            // Using a regex to split by comma but ignore commas inside quotes (if any)
+            const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            return {
+                name: columns[0]?.trim(),
+                cat: columns[1]?.trim(),
+                price: columns[2]?.trim(),
+                veg: columns[3]?.trim().toLowerCase() === 'true',
+                desc: columns[4]?.trim(),
+                img: columns[5] ? columns[5].trim() : 'food'
+            };
         });
-    }
-});
 
-function renderMenu() {
+        renderMenu(menuItems);
+    } catch (error) {
+        console.error("Error fetching menu:", error);
+        document.getElementById('menuContainer').innerHTML = `<p class="text-center text-gray-500 mt-10">Failed to load menu. Please check your connection.</p>`;
+    }
+}
+
+function renderMenu(data) {
     const container = document.getElementById('menuContainer');
     const nav = document.getElementById('categoryNav');
     const isVegOnly = document.getElementById('vegToggle').checked;
     const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
 
+    // Get unique categories from the sheet data
+    const categories = [...new Set(data.map(item => item.cat))];
+    
     container.innerHTML = '';
     nav.innerHTML = '';
 
     categories.forEach(cat => {
-        const catItems = fullMenu.filter(item => 
+        const catItems = data.filter(item => 
             item.cat === cat && 
             (!isVegOnly || item.veg) &&
-            (item.name.toLowerCase().includes(searchTerm))
+            (item.name.toLowerCase().includes(searchTerm) || item.desc.toLowerCase().includes(searchTerm))
         );
 
         if (catItems.length > 0) {
-            // Add Nav Tab
-            nav.innerHTML += `<a href="#${cat}" class="whitespace-nowrap pb-1 hover:text-red-500">${cat}</a>`;
+            // Build Category Tab
+            const navItem = document.createElement('a');
+            navItem.href = `#${cat.replace(/\s+/g, '-')}`;
+            navItem.className = "whitespace-nowrap pb-1 hover:text-red-500 transition-colors";
+            navItem.innerText = cat;
+            nav.appendChild(navItem);
 
-            // Add Section
-            let sectionHtml = `<section id="${cat}" class="mb-12"><h2 class="text-xl font-bold mb-6">${cat}</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
+            // Build Section
+            let sectionHtml = `
+                <section id="${cat.replace(/\s+/g, '-')}" class="mb-12">
+                    <h2 class="text-xl font-bold mb-6 text-gray-800 border-l-4 border-red-500 pl-3">${cat}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
             
             catItems.forEach(item => {
                 sectionHtml += `
-                    <div class="flex justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div class="flex-1 pr-4">
                             <div class="w-4 h-4 border-2 ${item.veg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center mb-2">
                                 <div class="w-2 h-2 ${item.veg ? 'bg-green-600' : 'bg-red-600'} rounded-full"></div>
                             </div>
                             <h3 class="font-bold text-gray-800">${item.name}</h3>
-                            <p class="text-xs text-gray-500 mt-1 line-clamp-2">${item.desc}</p>
-                            <p class="mt-3 font-semibold text-gray-900">₹${item.price}</p>
+                            <p class="text-xs text-gray-500 mt-1 leading-relaxed line-clamp-2">${item.desc}</p>
+                            <p class="mt-3 font-bold text-gray-900">₹${item.price}</p>
                         </div>
                         <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden relative shrink-0">
-                            <img src="https://source.unsplash.com/featured/200x200?${item.img},food" alt="${item.name}" class="object-cover w-full h-full">
-                            <button class="add-btn absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-200 px-4 py-1 rounded shadow-md text-xs font-bold uppercase hover:bg-red-50">Add</button>
+                            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80&sig=${item.name.replace(/\s+/g, '')}" 
+                                 alt="${item.name}" 
+                                 class="object-cover w-full h-full">
+                            <button class="add-btn absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-100 px-4 py-1 rounded shadow-lg text-xs font-bold uppercase hover:bg-red-50 active:scale-95 transition-all">
+                                Add
+                            </button>
                         </div>
                     </div>`;
             });
@@ -78,16 +87,31 @@ function renderMenu() {
         }
     });
 
-    // Add button logic
+    // Handle "No results" state
+    if (container.innerHTML === '') {
+        container.innerHTML = `
+            <div class="text-center py-20">
+                <p class="text-gray-400 text-lg">No dishes found matching your search.</p>
+            </div>`;
+    }
+
+    // Re-attach button logic
     document.querySelectorAll('.add-btn').forEach(btn => {
         btn.onclick = () => {
+            const originalText = btn.innerText;
             btn.innerText = 'Added';
-            btn.classList.add('bg-red-500', 'text-white');
-            setTimeout(() => { btn.innerText = 'Add'; btn.classList.remove('bg-red-500', 'text-white'); }, 1500);
+            btn.classList.add('bg-red-500', 'text-white', 'border-red-500');
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                btn.classList.remove('bg-red-500', 'text-white', 'border-red-500'); 
+            }, 1000);
         };
     });
 }
 
-document.getElementById('vegToggle').addEventListener('change', renderMenu);
-document.getElementById('menuSearch').addEventListener('input', renderMenu);
-window.onload = renderMenu;
+// Event Listeners
+document.getElementById('vegToggle').addEventListener('change', fetchMenu);
+document.getElementById('menuSearch').addEventListener('input', fetchMenu);
+
+// Initial Load
+window.onload = fetchMenu;
