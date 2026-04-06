@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Portfolio | Zomato Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-['Inter']">
+
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-red-500">CafeCrunch</h1>
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-600">Veg Only</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="vegToggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+        </div>
+        
+        <nav class="max-w-4xl mx-auto px-4 flex gap-6 overflow-x-auto py-3 no-scrollbar text-gray-500 font-medium">
+            <a href="#breakfast" class="whitespace-nowrap border-b-2 border-red-500 text-red-500 pb-1">Breakfast</a>
+            <a href="#beverages" class="whitespace-nowrap border-b-2 border-transparent hover:text-gray-800 pb-1">Beverages</a>
+            <a href="#desserts" class="whitespace-nowrap border-b-2 border-transparent hover:text-gray-800 pb-1">Desserts</a>
+        </nav>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <section id="breakfast" class="mb-12">
+            <h2 class="text-xl font-bold mb-6">Breakfast Specials</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-grid">
+                <div class="menu-item flex justify-between p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100" data-veg="true">
+                    <div class="flex-1 pr-4">
+                        <div class="w-4 h-4 border-2 border-green-600 flex items-center justify-center mb-2">
+                            <div class="w-2 h-2 bg-green-600 rounded-full"></div>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Classic Avocado Toast</h3>
+                        <p class="text-sm text-gray-500 mt-1">Sourdough bread, smashed avocado, chili flakes, and lime.</p>
+                        <p class="mt-3 font-semibold text-gray-900">₹250</p>
+                    </div>
+                    <div class="w-24 h-24 bg-gray-200 rounded-xl overflow-hidden relative">
+                        <img src="https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=150" alt="Food" class="object-cover w-full h-full">
+                        <button class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-200 px-4 py-1 rounded shadow-md text-xs font-bold uppercase hover:bg-red-50">Add</button>
+                    </div>
+                </div>
+
+                <div class="menu-item flex justify-between p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100" data-veg="false">
+                    <div class="flex-1 pr-4">
+                        <div class="w-4 h-4 border-2 border-red-600 flex items-center justify-center mb-2">
+                            <div class="w-2 h-2 bg-red-600 rounded-full"></div>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Chicken Club Sandwich</h3>
+                        <p class="text-sm text-gray-500 mt-1">Grilled chicken, fried egg, lettuce, and house mayo.</p>
+                        <p class="mt-3 font-semibold text-gray-900">₹380</p>
+                    </div>
+                    <div class="w-24 h-24 bg-gray-200 rounded-xl overflow-hidden relative">
+                        <img src="https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=150" alt="Food" class="hidden">
+                        <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs text-center">Image</div>
+                        <button class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-200 px-4 py-1 rounded shadow-md text-xs font-bold uppercase hover:bg-red-50">Add</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
