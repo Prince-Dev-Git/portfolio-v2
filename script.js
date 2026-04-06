@@ -1,27 +1,39 @@
 const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMMdMzCxRbecA8f_OSKbXEf43jyAbL4yCifIkMZ85WNOTSnFLXJeP4bQo9Hx1Kdd9q85wOCuIo3ZO/pub?gid=0&single=true&output=csv';
+const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; // Replace with your Web App URL
+
+let cart = [];
 
 async function fetchMenu() {
     console.log("Attempting to fetch menu...");
     try {
         const response = await fetch(sheetUrl);
-        if (!response.ok) {
-            alert("Network error: Could not reach Google Sheets");
-            return;
-        }
-        const data = await response.text();
-        console.log("Data received successfully");
+        if (!response.ok) throw new Error("Could not reach Google Sheets");
         
-        // If data is empty or HTML (error page), stop here
+        const data = await response.text();
+        
         if (data.includes("<!DOCTYPE html>")) {
-            alert("Error: Google Sheet link returned a login page instead of data. Please re-publish as CSV.");
+            alert("Error: Link returned HTML. Please re-publish Google Sheet as CSV.");
             return;
         }
 
-        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
-        renderMenu(rows);
+        // Clean and parse rows
+        const rawRows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+        
+        const menuItems = rawRows.map(row => {
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            return {
+                name: cols[0]?.trim(),
+                cat: cols[1]?.trim(),
+                price: cols[2]?.trim(),
+                veg: cols[3]?.trim().toLowerCase() === 'true',
+                desc: cols[4]?.trim(),
+                img: cols[5]?.trim() || 'food'
+            };
+        });
+
+        renderMenu(menuItems);
     } catch (error) {
-        alert("JavaScript Error: " + error.message);
-        console.error(error);
+        console.error("Fetch Error:", error);
     }
 }
 
@@ -31,11 +43,9 @@ function renderMenu(data) {
     const isVegOnly = document.getElementById('vegToggle').checked;
     const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
 
-    // Reset UI
     container.innerHTML = '';
     nav.innerHTML = '';
 
-    // Get unique categories
     const categories = [...new Set(data.map(item => item.cat))];
     
     categories.forEach(cat => {
@@ -46,14 +56,12 @@ function renderMenu(data) {
         );
 
         if (catItems.length > 0) {
-            // Add Navigation Link
             const navLink = document.createElement('a');
             navLink.href = `#${cat.replace(/\s+/g, '-')}`;
             navLink.className = "whitespace-nowrap pb-1 hover:text-red-500 transition-colors";
             navLink.innerText = cat;
             nav.appendChild(navLink);
 
-            // Add Menu Section
             let sectionHtml = `
                 <section id="${cat.replace(/\s+/g, '-')}" class="mb-12">
                     <h2 class="text-xl font-bold mb-6 border-l-4 border-red-500 pl-3 text-gray-800">${cat}</h2>
@@ -72,7 +80,7 @@ function renderMenu(data) {
                         </div>
                         <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden relative shrink-0">
                             <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80&sig=${item.name.replace(/\s+/g, '')}" alt="Food" class="object-cover w-full h-full">
-                            <button onclick="addToCart('${item.name}', ${item.price})" class="add-btn absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-100 px-4 py-1 rounded shadow-lg text-xs font-bold uppercase hover:bg-red-50 transition-all">Add</button>
+                            <button onclick="addToCart('${item.name.replace(/'/g, "\\'")}', ${item.price})" class="add-btn absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-100 px-4 py-1 rounded shadow-lg text-xs font-bold uppercase hover:bg-red-50 transition-all">Add</button>
                         </div>
                     </div>`;
             });
@@ -80,70 +88,88 @@ function renderMenu(data) {
         }
     });
 }
-// Event Listeners
-document.getElementById('vegToggle').addEventListener('change', fetchMenu);
-document.getElementById('menuSearch').addEventListener('input', fetchMenu);
 
-// Initial Load
-window.onload = fetchMenu;
+// --- CART & ORDER LOGIC ---
 
-function checkAdmin() {
-    const pass = document.getElementById('adminPass').value;
-    // Use a strong password here
-    if(pass === "Hello@world") { 
-        window.location.href = "admin.html";
+function addToCart(name, price) {
+    const existing = cart.find(i => i.name === name);
+    if (existing) {
+        existing.qty++;
     } else {
-        alert("Access Denied: Incorrect Password");
+        cart.push({ name, price, qty: 1 });
     }
+    updateCartUI();
 }
 
-let logoClicks = 0;
-document.querySelector('h1').addEventListener('click', () => {
-    logoClicks++;
-    if(logoClicks === 5 {
-        document.getElementById('adminModal').classList.remove('hidden');
-        logoClicks = 0; // Reset
-    }
-    setTimeout(() => { logoClicks = 0; }, 2000); // Reset if not 3 clicks in 1 sec
-});
-async function clearOrder(table) {
-    const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+function updateCartUI() {
+    const count = cart.reduce((acc, item) => acc + item.qty, 0);
+    document.getElementById('cartFab').classList.toggle('hidden', count === 0);
+    document.getElementById('cartCountFab').innerText = count;
+}
+
+function openCart() {
+    document.getElementById('orderModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('orderModal').classList.add('hidden');
+}
+
+async function placeOrder() {
+    const btn = document.getElementById('placeOrderBtn');
+    const orderData = {
+        customerName: document.getElementById('userName').value,
+        phone: document.getElementById('userPhone').value,
+        tableNum: document.getElementById('tableNum').value,
+        items: cart
+    };
+
+    if(!orderData.customerName || !orderData.phone) return alert("Please enter details");
+
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+
     try {
-        // We now call the 'complete' action instead of 'delete'
-        await fetch(`${SCRIPT_URL}?action=complete&table=${table}`, { mode: 'no-cors' });
-        
-        alert(`Table ${table} marked as Completed!`);
-        fetchOrders(); // Refresh screen
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(orderData)
+        });
+        alert("Order Placed!");
+        cart = [];
+        location.reload();
     } catch (e) {
-        fetchOrders();
+        alert("Check your Google Sheet!");
+        location.reload();
     }
 }
 
-// Inside your renderOrders function, change how you filter rows:
-const rows = data.split('\n').filter(r => r.trim() !== '').slice(1);
-
-const pendingRows = rows.filter(row => {
-    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    return cols[7]?.trim() === "Pending"; // Only show orders that aren't done yet
-});
-
-renderOrders(pendingRows);
+// --- ADMIN LOGIC ---
 
 let logoClicks = 0;
 const logo = document.querySelector('h1');
+logo.style.cursor = 'pointer';
 
-logo.style.cursor = 'pointer'; // Make it look clickable for you
 logo.addEventListener('click', () => {
     logoClicks++;
     if (logoClicks === 5) {
-        const pass = prompt("Enter Admin Password:");
-        if (pass === "HelloPrince") { // Your Full Password
-            window.location.href = "admin.html";
-        } else {
-        
-            alert("Wrong Password");
-        }
+        document.getElementById('adminModal').classList.remove('hidden');
         logoClicks = 0;
     }
     setTimeout(() => { logoClicks = 0; }, 2000);
 });
+
+function checkAdmin() {
+    const pass = document.getElementById('adminPass').value;
+    if(pass === "HelloPrince") { 
+        window.location.href = "admin.html";
+    } else {
+        alert("Wrong Password");
+    }
+}
+
+// --- INITIALIZATION ---
+
+document.getElementById('vegToggle').addEventListener('change', fetchMenu);
+document.getElementById('menuSearch').addEventListener('input', fetchMenu);
+window.onload = fetchMenu;
