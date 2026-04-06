@@ -125,16 +125,21 @@ async function placeOrder() {
     btn.disabled = true;
 
     try {
+        // This 'no-cors' mode is the secret to making Google Scripts work
         await fetch(SCRIPT_URL, {
             method: 'POST',
+            mode: 'no-cors', 
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderData)
         });
-        alert("Order Placed Successfully!");
+        
+        alert("Order Placed Successfully! We are preparing your food.");
         cart = [];
         location.reload();
     } catch (e) {
-        alert("Order sent to Sheet!"); 
-        // Note: CORS might show error but data usually hits the sheet anyway
+        console.log("Error:", e);
+        alert("Something went wrong, but check your sheet—it might have arrived!");
     }
 }
 
