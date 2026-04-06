@@ -1,175 +1,114 @@
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMMdMzCxRbecA8f_OSKbXEf43jyAbL4yCifIkMZ85WNOTSnFLXJeP4bQo9Hx1Kdd9q85wOCuIo3ZO/pub?gid=0&single=true&output=csv';
-const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; // Replace with your Web App URL
+const MENU_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMMdMzCxRbecA8f_OSKbXEf43jyAbL4yCifIkMZ85WNOTSnFLXJeP4bQo9Hx1Kdd9q85wOCuIo3ZO/pub?gid=0&single=true&output=csv';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYlVPSbRMZqsB79FTVIQSPnzYsYp-IovISDPo3Bj5I8HF8UM41NwrUYrHPQyMxZj88FQ/exec';
 
 let cart = [];
 
 async function fetchMenu() {
-    console.log("Attempting to fetch menu...");
     try {
-        const response = await fetch(sheetUrl);
-        if (!response.ok) throw new Error("Could not reach Google Sheets");
-        
-        const data = await response.text();
-        
-        if (data.includes("<!DOCTYPE html>")) {
-            alert("Error: Link returned HTML. Please re-publish Google Sheet as CSV.");
-            return;
-        }
-
-        // Clean and parse rows
-        const rawRows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
-        
-        const menuItems = rawRows.map(row => {
-            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            return {
-                name: cols[0]?.trim(),
-                cat: cols[1]?.trim(),
-                price: cols[2]?.trim(),
-                veg: cols[3]?.trim().toLowerCase() === 'true',
-                desc: cols[4]?.trim(),
-                img: cols[5]?.trim() || 'food'
-            };
+        const res = await fetch(MENU_CSV);
+        const text = await res.text();
+        const rows = text.split(/\r?\n/).filter(r => r.trim() !== "").slice(1);
+        const items = rows.map(r => {
+            const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            return { name: c[0], cat: c[1], price: c[2], veg: c[3]?.toLowerCase() === 'true', desc: c[4] };
         });
-
-        renderMenu(menuItems);
-    } catch (error) {
-        console.error("Fetch Error:", error);
-    }
+        render(items);
+    } catch (e) { console.log("Error loading menu", e); }
 }
 
-function renderMenu(data) {
+function render(data) {
     const container = document.getElementById('menuContainer');
     const nav = document.getElementById('categoryNav');
-    const isVegOnly = document.getElementById('vegToggle').checked;
-    const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
-
-    container.innerHTML = '';
-    nav.innerHTML = '';
-
-    const categories = [...new Set(data.map(item => item.cat))];
+    const isVeg = document.getElementById('vegToggle').checked;
+    const search = document.getElementById('menuSearch').value.toLowerCase();
     
-    categories.forEach(cat => {
-        const catItems = data.filter(item => 
-            item.cat === cat && 
-            (!isVegOnly || item.veg) &&
-            (item.name.toLowerCase().includes(searchTerm) || item.desc.toLowerCase().includes(searchTerm))
-        );
+    container.innerHTML = ''; nav.innerHTML = '';
+    const cats = [...new Set(data.map(i => i.cat))];
 
-        if (catItems.length > 0) {
-            const navLink = document.createElement('a');
-            navLink.href = `#${cat.replace(/\s+/g, '-')}`;
-            navLink.className = "whitespace-nowrap pb-1 hover:text-red-500 transition-colors";
-            navLink.innerText = cat;
-            nav.appendChild(navLink);
-
-            let sectionHtml = `
-                <section id="${cat.replace(/\s+/g, '-')}" class="mb-12">
-                    <h2 class="text-xl font-bold mb-6 border-l-4 border-red-500 pl-3 text-gray-800">${cat}</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
-            
-            catItems.forEach(item => {
-                sectionHtml += `
-                    <div class="flex justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
+    cats.forEach(cat => {
+        const filtered = data.filter(i => i.cat === cat && (!isVeg || i.veg) && i.name.toLowerCase().includes(search));
+        if (filtered.length > 0) {
+            nav.innerHTML += `<a href="#${cat}" class="whitespace-nowrap">${cat}</a>`;
+            let html = `<section id="${cat}"><h2 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-red-500 pl-2">${cat}</h2><div class="space-y-4">`;
+            filtered.forEach(i => {
+                html += `
+                    <div class="bg-white p-4 rounded-2xl flex justify-between border shadow-sm">
                         <div class="flex-1 pr-4">
-                            <div class="w-4 h-4 border-2 ${item.veg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center mb-2">
-                                <div class="w-2 h-2 ${item.veg ? 'bg-green-600' : 'bg-red-600'} rounded-full"></div>
+                            <div class="w-3 h-3 border ${i.veg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center mb-1">
+                                <div class="w-1.5 h-1.5 ${i.veg ? 'bg-green-600' : 'bg-red-600'} rounded-full"></div>
                             </div>
-                            <h3 class="font-bold text-gray-800">${item.name}</h3>
-                            <p class="text-xs text-gray-500 mt-1 line-clamp-2">${item.desc}</p>
-                            <p class="mt-3 font-bold text-gray-900">₹${item.price}</p>
+                            <h3 class="font-bold text-gray-800">${i.name}</h3>
+                            <p class="text-[10px] text-gray-400 mt-1">${i.desc || ''}</p>
+                            <p class="text-sm font-bold mt-2">₹${i.price}</p>
                         </div>
-                        <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden relative shrink-0">
-                            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80&sig=${item.name.replace(/\s+/g, '')}" alt="Food" class="object-cover w-full h-full">
-                            <button onclick="addToCart('${item.name.replace(/'/g, "\\'")}', ${item.price})" class="add-btn absolute -bottom-1 left-1/2 -translate-x-1/2 bg-white text-red-500 border border-gray-100 px-4 py-1 rounded shadow-lg text-xs font-bold uppercase hover:bg-red-50 transition-all">Add</button>
+                        <div class="flex flex-col items-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden mb-2">
+                                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&sig=${i.name.replace(/\s+/g, '')}" class="w-full h-full object-cover">
+                            </div>
+                            <button onclick="addToCart('${i.name.replace(/'/g,"\\'")}', ${i.price})" class="bg-red-50 text-red-500 px-4 py-1 rounded-lg font-bold text-xs border border-red-100 hover:bg-red-500 hover:text-white transition-all">ADD</button>
                         </div>
                     </div>`;
             });
-            container.innerHTML += sectionHtml + `</div></section>`;
+            container.innerHTML += html + `</div></section>`;
         }
     });
 }
 
-// --- CART & ORDER LOGIC ---
-
-function addToCart(name, price) {
-    const existing = cart.find(i => i.name === name);
-    if (existing) {
-        existing.qty++;
-    } else {
-        cart.push({ name, price, qty: 1 });
-    }
-    updateCartUI();
+function addToCart(n, p) {
+    const item = cart.find(i => i.name === n);
+    if(item) item.qty++; else cart.push({name: n, price: p, qty: 1});
+    updateUI();
 }
 
-function updateCartUI() {
-    const count = cart.reduce((acc, item) => acc + item.qty, 0);
+function updateUI() {
+    const count = cart.reduce((a, b) => a + b.qty, 0);
+    document.getElementById('cartBar').classList.toggle('hidden', count === 0);
     document.getElementById('cartFab').classList.toggle('hidden', count === 0);
+    document.getElementById('cartCount').innerText = `${count} Items`;
     document.getElementById('cartCountFab').innerText = count;
 }
 
-function openCart() {
-    document.getElementById('orderModal').classList.remove('hidden');
-}
-
-function closeModal() {
-    document.getElementById('orderModal').classList.add('hidden');
-}
+function openModal() { document.getElementById('orderModal').classList.remove('hidden'); }
+function closeModal() { document.getElementById('orderModal').classList.add('hidden'); }
 
 async function placeOrder() {
-    const btn = document.getElementById('placeOrderBtn');
-    const orderData = {
+    const data = {
         customerName: document.getElementById('userName').value,
         phone: document.getElementById('userPhone').value,
         tableNum: document.getElementById('tableNum').value,
         items: cart
     };
-
-    if(!orderData.customerName || !orderData.phone) return alert("Please enter details");
-
+    if(!data.customerName || !data.phone) return alert("Please fill in your name and phone number");
+    const btn = document.getElementById('placeBtn');
     btn.innerText = "Processing...";
     btn.disabled = true;
-
-    try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(orderData)
-        });
-        alert("Order Placed!");
-        cart = [];
-        location.reload();
-    } catch (e) {
-        alert("Check your Google Sheet!");
-        location.reload();
-    }
+    
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+    alert("Order Successful! We are preparing your food.");
+    cart = [];
+    location.reload();
 }
 
-// --- ADMIN LOGIC ---
-
-let logoClicks = 0;
-const logo = document.querySelector('h1');
-logo.style.cursor = 'pointer';
-
-logo.addEventListener('click', () => {
-    logoClicks++;
-    if (logoClicks === 5) {
+// Admin Trigger (Logo Clicks)
+let clicks = 0;
+document.getElementById('adminTrigger').onclick = () => {
+    clicks++;
+    if(clicks === 5) {
         document.getElementById('adminModal').classList.remove('hidden');
-        logoClicks = 0;
+        clicks = 0;
     }
-    setTimeout(() => { logoClicks = 0; }, 2000);
-});
+    setTimeout(() => clicks = 0, 2000);
+};
 
 function checkAdmin() {
     const pass = document.getElementById('adminPass').value;
-    if(pass === "HelloPrince") { 
+    if(pass === "HelloPrince") {
         window.location.href = "admin.html";
     } else {
-        alert("Wrong Password");
+        alert("Incorrect Pin");
     }
 }
 
-// --- INITIALIZATION ---
-
-document.getElementById('vegToggle').addEventListener('change', fetchMenu);
-document.getElementById('menuSearch').addEventListener('input', fetchMenu);
+document.getElementById('vegToggle').onchange = fetchMenu;
+document.getElementById('menuSearch').oninput = fetchMenu;
 window.onload = fetchMenu;
