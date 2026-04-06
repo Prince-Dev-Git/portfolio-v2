@@ -1,34 +1,27 @@
 const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuMMdMzCxRbecA8f_OSKbXEf43jyAbL4yCifIkMZ85WNOTSnFLXJeP4bQo9Hx1Kdd9q85wOCuIo3ZO/pub?gid=0&single=true&output=csv';
 
 async function fetchMenu() {
+    console.log("Attempting to fetch menu...");
     try {
         const response = await fetch(sheetUrl);
-        const csvText = await response.text();
+        if (!response.ok) {
+            alert("Network error: Could not reach Google Sheets");
+            return;
+        }
+        const data = await response.text();
+        console.log("Data received successfully");
         
-        // Split by lines and remove completely empty rows
-        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").slice(1); 
-        
-        const menuItems = rows.map(row => {
-            // Split by comma, handling potential quotes
-            const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            return {
-                name: columns[0]?.trim() || "Unnamed Item",
-                cat: columns[1]?.trim() || "General",
-                price: columns[2]?.trim() || "0",
-                veg: columns[3]?.toLowerCase().includes('true'),
-                desc: columns[4]?.trim() || "",
-                img: columns[5]?.trim() || "food"
-            };
-        });
+        // If data is empty or HTML (error page), stop here
+        if (data.includes("<!DOCTYPE html>")) {
+            alert("Error: Google Sheet link returned a login page instead of data. Please re-publish as CSV.");
+            return;
+        }
 
-        renderMenu(menuItems);
+        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+        renderMenu(rows);
     } catch (error) {
-        console.error("Critical Error:", error);
-        document.getElementById('menuContainer').innerHTML = `
-            <div class="text-center py-20">
-                <p class="text-red-500 font-bold">Menu Sync Failed</p>
-                <p class="text-gray-500 text-sm">Please refresh the page in 5 seconds.</p>
-            </div>`;
+        alert("JavaScript Error: " + error.message);
+        console.error(error);
     }
 }
 
