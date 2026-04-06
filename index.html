@@ -63,6 +63,27 @@
             <button onclick="document.getElementById('adminModal').classList.add('hidden')" class="mt-4 text-gray-400 text-xs">Back to Menu</button>
         </div>
     </div>
+    <div id="orderModal" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-end sm:items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+        <h2 class="text-xl font-bold mb-4">Review Order</h2>
+        
+        <div id="cartItemsList" class="mb-4 max-h-40 overflow-y-auto"></div>
+        
+        <div class="flex justify-between font-bold border-t pt-4 mb-6">
+            <span>Total:</span>
+            <span id="cartTotal" class="text-red-500">₹0</span>
+        </div>
+
+        <div class="space-y-3">
+            <input type="text" id="userName" placeholder="Your Name" class="w-full p-3 border rounded-xl outline-none">
+            <input type="tel" id="userPhone" placeholder="Phone Number" class="w-full p-3 border rounded-xl outline-none">
+            <input type="number" id="tableNum" placeholder="Table Number" class="w-full p-3 border rounded-xl outline-none">
+        </div>
+        
+        <button onclick="placeOrder()" id="placeBtn" class="w-full bg-red-500 text-white py-4 mt-6 rounded-2xl font-bold">Confirm Order</button>
+        <button onclick="closeModal()" class="w-full text-gray-400 mt-4 text-sm">Cancel</button>
+    </div>
+</div>
 
     <script src="script.js"></script>
 </body>

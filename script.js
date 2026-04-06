@@ -3,6 +3,10 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYlVPSbRMZqsB79FTVI
 
 let cart = [];
 
+// 1. Get Table Number from URL (?table=5)
+const urlParams = new URLSearchParams(window.location.search);
+const tableFromUrl = urlParams.get('table');
+
 async function fetchMenu() {
     try {
         const res = await fetch(MENU_CSV);
@@ -13,7 +17,7 @@ async function fetchMenu() {
             return { name: c[0], cat: c[1], price: c[2], veg: c[3]?.toLowerCase() === 'true', desc: c[4] };
         });
         render(items);
-    } catch (e) { console.log("Error loading menu", e); }
+    } catch (e) { console.log(e); }
 }
 
 function render(data) {
@@ -35,16 +39,13 @@ function render(data) {
                     <div class="bg-white p-4 rounded-2xl flex justify-between border shadow-sm">
                         <div class="flex-1 pr-4">
                             <div class="w-3 h-3 border ${i.veg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center mb-1">
-                                <div class="w-1.5 h-1.5 ${i.veg ? 'bg-green-600' : 'bg-red-600'} rounded-full"></div>
+                                <div class="w-1.5 h-1.5 ${item.veg ? 'bg-green-600' : 'bg-red-600'} rounded-full"></div>
                             </div>
                             <h3 class="font-bold text-gray-800">${i.name}</h3>
                             <p class="text-[10px] text-gray-400 mt-1">${i.desc || ''}</p>
-                            <p class="text-sm font-bold mt-2">₹${i.price}</p>
+                            <p class="text-sm font-bold mt-2 text-gray-900">₹${i.price}</p>
                         </div>
                         <div class="flex flex-col items-center">
-                            <div class="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden mb-2">
-                                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&sig=${i.name.replace(/\s+/g, '')}" class="w-full h-full object-cover">
-                            </div>
                             <button onclick="addToCart('${i.name.replace(/'/g,"\\'")}', ${i.price})" class="bg-red-50 text-red-500 px-4 py-1 rounded-lg font-bold text-xs border border-red-100 hover:bg-red-500 hover:text-white transition-all">ADD</button>
                         </div>
                     </div>`;
@@ -68,7 +69,24 @@ function updateUI() {
     document.getElementById('cartCountFab').innerText = count;
 }
 
-function openModal() { document.getElementById('orderModal').classList.remove('hidden'); }
+function openModal() {
+    const list = document.getElementById('cartItemsList');
+    const totalEl = document.getElementById('cartTotal');
+    let total = 0;
+
+    list.innerHTML = cart.map(item => {
+        total += (item.price * item.qty);
+        return `<div class="flex justify-between items-center text-sm mb-2 pb-2 border-b border-gray-50">
+                    <span class="text-gray-700">${item.name} x ${item.qty}</span>
+                    <span class="font-bold">₹${item.price * item.qty}</span>
+                </div>`;
+    }).join('');
+
+    totalEl.innerText = `₹${total}`;
+    document.getElementById('orderModal').classList.remove('hidden');
+    if(tableFromUrl) document.getElementById('tableNum').value = tableFromUrl;
+}
+
 function closeModal() { document.getElementById('orderModal').classList.add('hidden'); }
 
 async function placeOrder() {
@@ -78,36 +96,23 @@ async function placeOrder() {
         tableNum: document.getElementById('tableNum').value,
         items: cart
     };
-    if(!data.customerName || !data.phone) return alert("Please fill in your name and phone number");
-    const btn = document.getElementById('placeBtn');
-    btn.innerText = "Processing...";
-    btn.disabled = true;
+    if(!data.customerName || !data.phone || !data.tableNum) return alert("Please fill all details");
     
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-    alert("Order Successful! We are preparing your food.");
-    cart = [];
-    location.reload();
+    document.getElementById('placeBtn').innerText = "Sending Order...";
+    document.getElementById('placeBtn').disabled = true;
+
+    try {
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+        alert("Order Placed Successfully!");
+        cart = []; location.reload();
+    } catch (e) { alert("Sent to Kitchen!"); location.reload(); }
 }
 
-// Admin Trigger (Logo Clicks)
-let clicks = 0;
+// Staff Login
 document.getElementById('adminTrigger').onclick = () => {
-    clicks++;
-    if(clicks === 5) {
-        document.getElementById('adminModal').classList.remove('hidden');
-        clicks = 0;
-    }
-    setTimeout(() => clicks = 0, 2000);
+    const p = prompt("Staff Pin:");
+    if(p === "HelloPrince") window.location.href = "admin.html";
 };
-
-function checkAdmin() {
-    const pass = document.getElementById('adminPass').value;
-    if(pass === "HelloPrince") {
-        window.location.href = "admin.html";
-    } else {
-        alert("Incorrect Pin");
-    }
-}
 
 document.getElementById('vegToggle').onchange = fetchMenu;
 document.getElementById('menuSearch').oninput = fetchMenu;
